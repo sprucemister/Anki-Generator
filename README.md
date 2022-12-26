@@ -1,9 +1,3 @@
----
-editor_options: 
-  markdown: 
-    wrap: 72
----
-
 ## Purpose
 
 This is a Shiny app for making Anki flashcards for learning Japanese. It
