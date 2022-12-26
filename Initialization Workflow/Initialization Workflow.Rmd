@@ -1,0 +1,133 @@
+---
+title: "INITIALIZATION WORKFLOW"
+output: html_document
+date: '2022-11-28'
+---
+
+This process uses `df` generated from `global.R`, so it won't work on knit
+
+Parse HTML from Original (OG) Bank of Card's that Stewart learned to get cards
+for Emma to learn
+
+Output to Excel `OG Bank Parsed_raw.csv`
+which should be manually combed through to check the parsing
+
+When the check is done save as `OG Bank Parsed.xlsx`
+
+```{r parse og bank, warning=FALSE}
+library(readr)
+library(tidyr)
+library(stringr)
+library(dplyr)
+library(tidyverse)
+
+regex_for_japanese<-"[\\x{3041}-\\x{3096}\\x{30A0}-\\x{30FF}\\x{3400}-\\x{4DB5}\\x{4E00}-\\x{9FCB}\\x{F900}-\\x{FA6A}\\x{2E80}-\\x{2FD5}\\x{FF5F}-\\x{FF9F}\\x{3000}-\\x{303F}\\x{31F0}-\\x{31FF}\\x{3220}-\\x{3243}\\x{3280}-\\x{337F}]"
+
+# Prep original dataframe
+df.group0 <- df %>%
+  filter(deck == 'OG Bank') %>%
+  select(fields) %>%
+  rowid_to_column("index")
+  
+# Group 1 = Ends With Japanese and then the word
+df.group1 <- df.group0 %>%
+  mutate(MyWord = sub(".*\\]", "", fields)) %>%
+  mutate(MyWord = sapply(str_extract_all(MyWord, regex_for_japanese),
+                         function(x) paste(x,collapse=""))) %>%
+  filter(nchar(MyWord) != 0)
+  
+# Group 2 = Starts With <div>
+df.group2 <- df.group0 %>%
+  anti_join(df.group1, by = 'index') %>%
+  mutate(first_4_characters = substr(fields, 1, 4)) %>%
+  filter(first_4_characters == "<div") %>%
+  separate(col = 'fields', into = c('first_div_contents',NA), sep = "</div>", remove = FALSE) %>%
+  mutate(MyWord = sub(".*\\]", "", first_div_contents)) %>%
+  mutate(MyWord = sapply(str_extract_all(MyWord, regex_for_japanese),
+                         function(x) paste(x,collapse=""))) %>%
+  select(-first_4_characters, -first_div_contents) %>%
+  arrange(fields)
+
+# Group 3 = Starts With Japanese
+df.group3 <- df.group0 %>%
+  anti_join(df.group1, by = 'index') %>%
+  anti_join(df.group2, by = 'index') %>%
+  separate(col = 'fields', into = c('MyWord',NA), sep = "<", remove = FALSE) %>%
+  separate(col = 'MyWord', into = c('MyWord',NA), sep = "&", remove = TRUE) %>%
+  separate(col = 'MyWord', into = c('MyWord',NA), sep = " ", remove = TRUE) %>%
+  arrange(MyWord)
+
+df_out <- rbind(df.group1,df.group2,df.group3) %>%
+  select(MyWord, fields)
+
+write_excel_csv(df_out, file = 'OG Bank Parsed_raw.csv')
+
+```
+
+Generate Initial To-Learn List
+
+This uses the combed through Excel `OG Bank Parsed.xlsx`
+
+- Combine two sources of words to list
+  - OG Bank (Words that Stewart learned)
+  - Core 10K (Static Frequency List from the internet)
+- Create ranking based on order in each of the two sources `rank.order`
+- Initialize other two columns used in active version of Learning List
+  - `rank.never_learn` 
+  - `rank.delay_bonus`
+
+The To-Learn List is saved as RDS in this folder `df.to_learn.RDS`
+
+If you want to use this one in the app, it should be moved to
+the `/global` folder
+
+```{r generate initial learning list}
+library(readxl)
+library(readr)
+
+df.bank <- read_excel("OG Bank Parsed.xlsx")
+df.Core_10K <- read_excel("Core_10K.xlsx")
+
+# Add index to bank
+df.bank <- df.bank %>%
+  rowid_to_column("index")
+
+# Rank index on bank and core 10k by 1000's, drop un-needed columns
+df.bank <- df.bank %>%
+  mutate(rank.order_bank = round(index, -3)) %>%
+  select(-index)
+df.Core_10K <- df.Core_10K %>%
+  mutate(rank.order_core10k = round(index, -3)) %>%
+  select(MyWord, rank.order_core10k)
+
+# Full Join Banks to get all potential words to learn
+## Anti join already learned words
+df.to_learn <- full_join(df.bank,
+          df.Core_10K, 
+          by = "MyWord")
+
+# Combine Rank Orders for bank and core 10k into a single metric
+## Words that are unique to one source are given an equal rank in the source
+## that does not contain that word
+df.to_learn <- df.to_learn %>%
+  mutate(rank.order_bank = if_else(is.na(rank.order_bank)== TRUE, 
+                                   rank.order_core10k, rank.order_bank)) %>%
+  mutate(rank.order_core10k = if_else(is.na(rank.order_core10k)== TRUE, 
+                                      rank.order_bank, rank.order_core10k)) %>%
+  mutate(rank.order = rank.order_bank + rank.order_core10k) %>%
+  select(-rank.order_bank, -rank.order_core10k)
+
+# Add additional columns that are populated through app, and sort
+df.to_learn <- df.to_learn %>%
+  mutate(rank.never_learn = 0) %>%
+  mutate(rank.delay_bonus = 0) %>%
+  mutate(rank.unseen_kanji = 0) %>%
+  mutate(rank.already_learned = 0) %>%
+  arrange(rank.never_learn,
+          rank.already_learned,
+          rank.unseen_kanji,
+          rank.order + rank.delay_bonus)
+
+# Save as RDS
+saveRDS(df.to_learn, file="List - To Learn.RDS")
+```
