@@ -41,5 +41,5 @@ def create_cards(my_learning_word, my_front, my_back, my_front_audio, my_back_au
     my_deck.add_note(my_note)
   
   # Write Deck to package file (that can be imported into Anki)
-  genanki.Package(my_deck).write_to_file('test python export anki.apkg')
+  genanki.Package(my_deck).write_to_file('Deck Of New Cards.apkg')
   
