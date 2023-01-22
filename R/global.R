@@ -96,6 +96,7 @@ df.to_learn <- df.to_learn %>%
 
 # Order Resulting To-Learn List
 df.to_learn <- df.to_learn %>%
+  slice(sample(1:n())) %>% # randomize order before sorting so cards within same rank randomized 
   arrange(rank.never_learn,
           rank.already_learned,
           rank.unseen_kanji,
