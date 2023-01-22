@@ -31,22 +31,22 @@ Anki card
 
 Included pieces:
 
--   Links to definition and furigana from
+-   Links to **definition** and **furigana** from
     [jisho.org](https://jisho.org/)
--   Links to example sentenes from
+-   Links to **example sentences** from
     [weblio.jp](https://ejje.weblio.jp/sentence/)
--   Links to pictures from
+-   Links to **pictures** from
     [Bing](https://www.bing.com/images/feed?form=Z9LH)
 
 ![](pics/app.jpg)
 
 ## Created Cards
 
-Can either be reading-front or audio-front cards
+Can either be *reading-front* or *audio-front* cards
 
-Reading-front cards will not use the example sentence
+*Reading-front* cards will not use the example sentence
 
-Audio-front cards will use the audio from the example sentence as the
+*Audio-front* cards will use the audio from the example sentence as the
 back audio
 
 You may want to change the template for the created cards within Anki to
@@ -74,7 +74,7 @@ Once deck is created, it can be imported into Anki, then the
 [AwesomeTTS](https://ankiweb.net/shared/info/1436550454) add-on can be
 used to generate the audio as follows:
 
--   **Front Audio** to **Front** with ***Overwrite***
--   **Back Audio** to **Back** with ***No Overwrite***
+-   ***Front Audio*** to ***Front*** with ***Overwrite***
+-   ***Back Audio*** to ***Back*** with ***No Overwrite***
 
 Then you're all set!
