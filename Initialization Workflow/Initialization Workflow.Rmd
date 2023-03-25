@@ -122,10 +122,12 @@ df.to_learn <- df.to_learn %>%
   mutate(rank.never_learn = 0) %>%
   mutate(rank.delay_bonus = 0) %>%
   mutate(rank.unseen_kanji = 0) %>%
+  mutate(rank.seen_kanji = 1) %>%
   mutate(rank.already_learned = 0) %>%
   arrange(rank.never_learn,
           rank.already_learned,
           rank.unseen_kanji,
+          rank.seen_kanji,
           rank.order + rank.delay_bonus)
 
 # Save as RDS

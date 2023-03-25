@@ -54,14 +54,20 @@ df.to_learn <- df.already_learned %>%
   mutate(rank.already_learned = case_when(rank.already_learned == 1 ~ 1,
                                           TRUE ~ 0))
 
-# Get Unseen Heisig Cards
-df.unseen_heisig <- df %>%
-  filter(deck == "Heisig's Remembering  The Kanji") %>%
-  filter(type == "new") %>%
-  filter(queue != "suspended")
+# Get Seen Heisig Cards
+df.heisig_seen <- df %>%
+  filter(deck == "Heisig experiment")
 
-# Loop through each letter in each potential word to learn
-## If it contains an unseen kanji, flag rank.unseen_kanji from 0 to 1
+# Get Heisig Keyword Lookup List
+df.heisig_keywords <- read_excel("inst/Heisig_Keywords.xlsx")
+
+# Get Unseen Heisig Characters
+df.heisig_unseen <- df.heisig_keywords %>% 
+  anti_join(df.heisig_seen, by=c('kanji'='sort_field'))
+
+# Unseen Kanji
+## Loop through each letter in each potential word to learn
+## If it contains an unseen kanji, flag rank.seen_kanji from 0 to 1
 df.to_learn['rank.unseen_kanji'] = 0
 for (i in 1:nrow(df.to_learn)) {
   # print(i)
@@ -69,9 +75,26 @@ for (i in 1:nrow(df.to_learn)) {
   learning_word_splitted <- str_split(learning_word, "")[[1]]
   for (j in 1:length(learning_word_splitted)) {
     # print(learning_word_splitted[j])
-    if (learning_word_splitted[j] %in% df.unseen_heisig$sort_field) {
-      # print('contains unseen heisig kanji')
+    if (learning_word_splitted[j] %in% df.heisig_unseen$kanji) {
+      # print('contains seen heisig kanji')
       df.to_learn['rank.unseen_kanji'][i, 1] = 1
+    }
+  }
+}
+
+# Seen Kanji
+## Loop through each letter in each potential word to learn
+## If it contains an seen kanji, flag rank.seen_kanji from 1 to 0
+df.to_learn['rank.seen_kanji'] = 1
+for (i in 1:nrow(df.to_learn)) {
+  # print(i)
+  learning_word <- df.to_learn[i, 1]
+  learning_word_splitted <- str_split(learning_word, "")[[1]]
+  for (j in 1:length(learning_word_splitted)) {
+    # print(learning_word_splitted[j])
+    if (learning_word_splitted[j] %in% df.heisig_seen$sort_field) {
+      # print('contains seen heisig kanji')
+      df.to_learn['rank.seen_kanji'][i, 1] = 0
     }
   }
 }
@@ -100,11 +123,9 @@ df.to_learn <- df.to_learn %>%
   arrange(rank.never_learn,
           rank.already_learned,
           rank.unseen_kanji,
-          rank.order + rank.delay_bonus)
+          rank.order + rank.delay_bonus,
+          rank.seen_kanji)
 
-
-# Get Heisig Keyword Lookup List
-df.heisig_keywords <- read_excel("inst/Heisig_Keywords.xlsx")
 
 # Source Python Script
 source_python('./py/Create File With Cards.py')
