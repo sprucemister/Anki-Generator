@@ -10,6 +10,7 @@ library(tidyverse)
 library(stringi)
 library(readr)
 library(readxl)
+library(shinyWidgets)
 
 # Filepaths
 anki_db_location <- "C:\\Users\\Spruce\\AppData\\Roaming\\Anki2\\Emma\\collection.anki2"
